@@ -6,11 +6,18 @@ Install dependencies into node_modules:
 ```
 npm install
 ```
-then run the plugin:
+then run the Ubiquity plugin:
 ```
-node grpcReader.js
+node plugin-ubnt-ifc-config-reader.js
 ```
 This will start gRPC server on 0.0.0.0:50051
+
+or linux plugin:
+```
+node plugin-linux-ifc-reader.js
+```
+This will start gRPC server on 0.0.0.0:50052
+
 
 Devmand server will use PluginRegistration.proto::getCapabilities to obtain
 readers, writers and their paths for given device type during startup.

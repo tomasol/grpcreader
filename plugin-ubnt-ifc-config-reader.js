@@ -1,3 +1,5 @@
+let register = {}
+
 const pathRegex = /^\/openconfig-interfaces:interfaces\/interface\[name='(.*)'\]\/config$/
 const mtuRegex = /^mtu (\d+)$/m
 const descriptionRegex = /^description '?(.+?)'?$/m
@@ -24,7 +26,8 @@ function parseIfcType(ifcName) {
   return "iana-if-type:Other"
 }
 
-async function reader(path, cli) {
+const IFC_CFG = '/openconfig-interfaces:interfaces/interface/config'
+async function readerIfcCfg(path, cli) {
   let pathMatch = pathRegex.exec(path)
   if (pathMatch == null) {
     throw "Cannot parse path"
@@ -39,47 +42,63 @@ async function reader(path, cli) {
   model["type"] = parseValue(typeRegex, cliResponse, function(match) {return parseIfcType(match[1])}, true)
   return model
 }
-// -----------------------------------------------------------------------------------------------------------------
+register[IFC_CFG] = readerIfcCfg
 
-// grpc specifics start here
-var PROTO_PATH = __dirname + "/proto/"
-var grpc = require("grpc")
-var readerPluginService = grpc.load(PROTO_PATH + "ReaderPlugin.proto").devmand.channels.cli.plugin.ReaderPlugin
-var pluginRegistrationService = grpc.load(PROTO_PATH + "PluginRegistration.proto").devmand.channels.cli.plugin.PluginRegistration
-// utils start
-var sending = function(obj){console.log("Sending", obj); return obj;}
-// utils end
+let deviceType = {device:'ubnt', version: '*'}
+let endpoint = '0.0.0.0:50051'
+// TODO externalize code below, remove global variables
+
+async function reader(path, cli) {
+  let unkeyed = path.replace(/\[[^\]]+\]/g, '')
+  console.log("Executing reader for", unkeyed, "with fx", register[unkeyed])
+  let readerFx = register[unkeyed]
+  if (typeof readerFx != 'function') {
+    throw 'No function registered on ' + unkeyed
+  }
+  return await readerFx(path, cli)
+}
 
 // PluginRegistration.proto::GetCapabilities rpc
 function getCapabilities(call, callback) {
-  var deviceType = {device:'ubnt', version: '*'}
-  var readerCapability = {path: '/openconfig-interfaces:interfaces/interface/config'}
-  var response = {deviceType: deviceType, readers: [readerCapability]}
+  let readers = []
+  for (let readerPath in register) {
+    let readerCapability = {path: readerPath}
+    readers.push(readerCapability)
+  }
+  let response = {deviceType: deviceType, readers: readers};
   console.log("getCapabilities request", call.request, "response", response)
   callback(null, response)
 }
 
+let PROTO_PATH = __dirname + "/proto/"
+let grpc = require("grpc")
+let readerPluginService = grpc.load(PROTO_PATH + "ReaderPlugin.proto").devmand.channels.cli.plugin.ReaderPlugin
+let pluginRegistrationService = grpc.load(PROTO_PATH + "PluginRegistration.proto").devmand.channels.cli.plugin.PluginRegistration
+// utils start
+let sending = function(obj){console.log("Sending", obj); return obj;}
+// utils end
+
 // ReaderPlugin.proto::Read rpc
 function read(call) {
   console.log("read started")
-  var currentCliPromise = null
+  let currentCliPromise = null
 
   let executeRead = async function(cmd) {
     console.log("executeRead", cmd)
     if (currentCliPromise) {
       throw "Expected empty currentCliPromise"
     }
-    var p = new Promise((resolve, reject) => {
+    let p = new Promise((resolve, reject) => {
       currentCliPromise = {
-        resolve:resolve,
+        resolve: resolve,
         reject: reject
       }
     })
     call.write(sending({cliRequest:{cmd:cmd}}))
     return p
   }
-  var cli =  {"executeRead": executeRead}
-  var started = false
+  let cli =  {"executeRead": executeRead}
+  let started = false
 
   call.on('data', function(readRequest) {
     console.log(readRequest)
@@ -114,7 +133,7 @@ function read(call) {
         call.end()
         throw "Expected currentCliPromise"
       }
-      var resolve = currentCliPromise.resolve
+      let resolve = currentCliPromise.resolve
       currentCliPromise = null
       resolve(readRequest.cliResponse.output)
     }
@@ -124,14 +143,18 @@ function read(call) {
   })
 }
 
-if (require.main === module) {
-  var server = new grpc.Server()
+function startGrpcServer(endpoint) {
+  let server = new grpc.Server()
   server.addProtoService(readerPluginService.service, {
     Read: read
   })
   server.addProtoService(pluginRegistrationService.service, {
     GetCapabilities: getCapabilities
   })
-  server.bind('0.0.0.0:50051', grpc.ServerCredentials.createInsecure())
+  server.bind(endpoint, grpc.ServerCredentials.createInsecure())
   server.start()
+}
+
+if (require.main === module) {
+  startGrpcServer(endpoint)
 }

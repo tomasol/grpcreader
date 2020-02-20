@@ -2,10 +2,6 @@
   "name": "grpcreader",
   "version": "1.0.0",
   "description": "",
-  "main": "grpcReader.js",
-  "scripts": {
-    "start": "node grpcReader.js"
-  },
   "author": "",
   "license": "ISC",
   "dependencies": {
