@@ -42,13 +42,24 @@ async function reader(path, cli) {
 // -----------------------------------------------------------------------------------------------------------------
 
 // grpc specifics start here
-var PROTO_PATH = __dirname + '/ReaderPlugin.proto'
-var grpc = require('grpc')
-var pluginService = grpc.load(PROTO_PATH).devmand.channels.cli.plugin.ReaderPlugin
+var PROTO_PATH = __dirname + "/proto/"
+var grpc = require("grpc")
+var readerPluginService = grpc.load(PROTO_PATH + "ReaderPlugin.proto").devmand.channels.cli.plugin.ReaderPlugin
+var pluginRegistrationService = grpc.load(PROTO_PATH + "PluginRegistration.proto").devmand.channels.cli.plugin.PluginRegistration
 // utils start
 var sending = function(obj){console.log("Sending", obj); return obj;}
 // utils end
 
+// PluginRegistration.proto::GetCapabilities rpc
+function getCapabilities(call, callback) {
+  var deviceType = {device:'ubnt', version: '*'}
+  var readerCapability = {path: '/openconfig-interfaces:interfaces/interface/config'}
+  var response = {deviceType: deviceType, readers: [readerCapability]}
+  console.log("getCapabilities request", call.request, "response", response)
+  callback(null, response)
+}
+
+// ReaderPlugin.proto::Read rpc
 function read(call) {
   console.log("read started")
   var currentCliPromise = null
@@ -115,8 +126,11 @@ function read(call) {
 
 if (require.main === module) {
   var server = new grpc.Server()
-  server.addProtoService(pluginService.service, {
-    read: read
+  server.addProtoService(readerPluginService.service, {
+    Read: read
+  })
+  server.addProtoService(pluginRegistrationService.service, {
+    GetCapabilities: getCapabilities
   })
   server.bind('0.0.0.0:50051', grpc.ServerCredentials.createInsecure())
   server.start()

@@ -1,4 +1,4 @@
-var PROTO_PATH = __dirname + '/ReaderPlugin.proto';
+var PROTO_PATH = __dirname + '/proto/ReaderPlugin.proto';
 
 var grpc = require('grpc');
 var pluginService = grpc.load(PROTO_PATH).devmand.channels.cli.plugin.ReaderPlugin;
