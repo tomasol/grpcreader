@@ -156,5 +156,6 @@ function startGrpcServer(endpoint) {
 }
 
 if (require.main === module) {
+  console.log("Starting gRPC server at", endpoint)
   startGrpcServer(endpoint)
 }
