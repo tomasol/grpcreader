@@ -1,4 +1,6 @@
-let register = {}
+let readerMap = {}
+let listReaderMap = {}
+let writerMap = {}
 
 const IFC = '/openconfig-interfaces:interfaces/interface'
 async function ifcReader(path, cli) {
@@ -9,11 +11,9 @@ async function ifcReader(path, cli) {
     return rObj
   });
 
-  let model = {}
-  model['keys'] = matches
-  return model
+  return matches
 }
-register[IFC] = ifcReader
+listReaderMap[IFC] = ifcReader
 
 const IFC_CFG = '/openconfig-interfaces:interfaces/interface/config'
 async function readerIfcCfg(path, cli) {
@@ -30,7 +30,7 @@ async function readerIfcCfg(path, cli) {
 
   return model
 }
-register[IFC_CFG] = readerIfcCfg
+readerMap[IFC_CFG] = readerIfcCfg
 
 const IFC_STATE = '/openconfig-interfaces:interfaces/interface/state'
 async function readerIfcState(path, cli) {
@@ -42,30 +42,34 @@ async function readerIfcState(path, cli) {
 
   return model
 }
-register[IFC_STATE] = readerIfcState
+readerMap[IFC_STATE] = readerIfcState
 
-let deviceType = {device:'linux', version: '*'}
-let endpoint = '0.0.0.0:50052'
+let deviceType = {device:'ubnt', version: '*'}
+let endpoint = '0.0.0.0:50051'
 // TODO externalize code below, remove global variables
-
+let mergedReaderMap = {...readerMap, ...listReaderMap}
 async function reader(path, cli) {
   let unkeyed = path.replace(/\[[^\]]+\]/g, '')
-  console.log("Executing reader for", unkeyed, "with fx", register[unkeyed])
-  let readerFx = register[unkeyed]
-  if (typeof readerFx != 'function') {
+  let fx = mergedReaderMap[unkeyed]
+  if (typeof fx != 'function') {
     throw 'No function registered on ' + unkeyed
   }
-  return await readerFx(path, cli)
+  console.log("Routing path ", path, "unkeyed", unkeyed, "to", fx)
+
+  return await fx(path, cli)
 }
 
 // PluginRegistration.proto::GetCapabilities rpc
 function getCapabilities(call, callback) {
-  let readers = []
-  for (let readerPath in register) {
-    let readerCapability = {path: readerPath}
-    readers.push(readerCapability)
+  let registeredReaders = []
+  for (let path in readerMap) {
+    registeredReaders.push({path: path})
   }
-  let response = {deviceType: deviceType, readers: readers};
+  let registeredListReaders = []
+  for (let path in listReaderMap) {
+    registeredListReaders.push({path: path})
+  }
+  let response = {deviceType: deviceType, readers: registeredReaders, listReaders: registeredListReaders};
   console.log("getCapabilities request", call.request, "response", response)
   callback(null, response)
 }

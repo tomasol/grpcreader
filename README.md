@@ -10,16 +10,15 @@ then run the Ubiquity plugin:
 ```
 node plugin-ubnt-ifc-config-reader.js
 ```
-This will start gRPC server on 0.0.0.0:50051
 
 or linux plugin:
 ```
 node plugin-linux-ifc-reader.js
 ```
-This will start gRPC server on 0.0.0.0:50052
+
+Either of those will start a gRPC server on 0.0.0.0:50051 .
 
 
+Devmand needs to be configured as well, see doc/config-sample folder for details.
 Devmand server will use PluginRegistration.proto::getCapabilities to obtain
 readers, writers and their paths for given device type during startup.
-
-This plugin only provides one reader, interface config reader for Ubiquity devices.
