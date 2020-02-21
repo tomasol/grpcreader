@@ -1,9 +1,5 @@
 # Running javascript plugins for devmand
 
-Create a link to gRPC proto folder called 'proto' in current folder:
-```
-ln -s ${MAGMA_REPO}/devmand/gateway/src/devmand/channels/cli/plugin/proto/ proto
-```
 Install dependencies into node_modules:
 ```
 npm install
@@ -20,10 +16,13 @@ node plugin-linux-ifc-reader.js
 
 Either of those will start a gRPC server on 0.0.0.0:50051 .
 
+Note that the plugins only talk with devmand, there is no direct connection to
+the managed device.
+
 # Devmand
 
 ## Configuration
-Devmand needs to be configured as well, see devmand's `doc/config-sample` folder for details.
+Devmand needs to be configured as well, example configuration is stored in devmand's `doc/config-sample` folder.
 ### plugin.json
 ```json
 {
@@ -70,6 +69,7 @@ pluginConfig: /root/plugin.json
 https://github.com/marosmars/magma/commit/345615c9b26179a1d51ddebef277cdf6cce9630d#diff-cc71baeacaa77a39ac384cc38786fb10
 - Run nodejs using `nodemon` for autorefresh functionality
 - It is safe to disable all other Platforms and starting of magma as this might cause permission and other errors.
+
 All tweaks are available here: `https://github.com/tomasol/magma/commits/grpc-plugins-tweaks
 
 # Quick start guide for running the demo with linux plugin
@@ -80,7 +80,7 @@ from devmand's `doc/config-sample` to `/root/` of devmand container.
 - Start `plugin-linux-ifc-reader.js`. The endpoint must be accessible from the container, e.g.
 using `ssh -R 50051:127.0.0.1:50051 root@container_ip`.
 - Start devmand. NodeJS should start logging registration request immediately.
-- After around a minute first pass of device polling should be done and the `device_state.json` should contain:
+- First pass of device polling should be done after a couple of seconds and the `device_state.json` should contain:
 ```sh
 $ docker exec 85 cat /cache/devmand/build/device_state.json
 ```
