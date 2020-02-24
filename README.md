@@ -4,7 +4,7 @@ Install dependencies into node_modules:
 ```
 npm install
 ```
-then run the Ubiquity plugin:
+then run the Ubiquiti plugin:
 ```
 node plugin-ubnt-ifc-config-reader.js
 ```
