@@ -46,7 +46,7 @@ async function readerIfcCfg(path, cli) {
 }
 readerMap[IFC_CFG] = readerIfcCfg
 
-let deviceType = {device:'ubnt', version: '*'}
+let deviceType = {device:'ubiquiti', version: '*'}
 let endpoint = '0.0.0.0:50051'
 // TODO externalize code below, remove global variables
 let mergedReaderMap = {...readerMap, ...listReaderMap}

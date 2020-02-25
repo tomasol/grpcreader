@@ -6,7 +6,7 @@ npm install
 ```
 then run the Ubiquiti plugin:
 ```
-node plugin-ubnt-ifc-config-reader.js
+node plugin-ubiquiti-ifc-config-reader.js
 ```
 
 or linux plugin:

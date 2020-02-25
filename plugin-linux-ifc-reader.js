@@ -44,7 +44,14 @@ async function readerIfcState(path, cli) {
 }
 readerMap[IFC_STATE] = readerIfcState
 
-let deviceType = {device:'ubnt', version: '*'}
+let flavour = {
+  newline:'\n',
+  baseShowConfigRegex:'(^((do )?sho?w? runn?i?n?g?-?c?o?n?f?i?g?).*)',
+  baseShowConfigIdx:1,
+  singleIndentChar:' ',
+  configSubsectionEnd:'???'
+}
+let deviceType = {device:'linux', version: '*', cliFlavourParams: flavour}
 let endpoint = '0.0.0.0:50051'
 // TODO externalize code below, remove global variables
 let mergedReaderMap = {...readerMap, ...listReaderMap}
